@@ -1,3 +1,5 @@
 <resources>
-    <string name="app_name">pico-botella</string>
+    <string name="app_name">Pico Botella</string>
+    <string name="pico_botella_label">pico botella</string>
+    <string name="home_welcome">¡Bienvenido a Pico Botella!</string>
 </resources>
