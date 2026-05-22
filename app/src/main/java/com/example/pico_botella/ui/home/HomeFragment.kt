@@ -1,5 +1,6 @@
 package com.example.pico_botella.ui.home
 
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -25,6 +26,9 @@ class HomeFragment : Fragment() {
     private lateinit var viewModel: HomeViewModel
     private var blinkAnimation: Animation? = null
     
+    // C7: Variable para el MediaPlayer
+    private var mediaPlayer: MediaPlayer? = null
+    
     // Para guardar la última posición de la botella y que el siguiente giro sea fluido
     private var lastAngle = 0f
 
@@ -41,6 +45,23 @@ class HomeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         setupClicks()
         setupAnimations()
+    }
+
+    // C7: Inicializar y reproducir automáticamente al iniciar el fragmento
+    override fun onStart() {
+        super.onStart()
+        if (mediaPlayer == null) {
+            // Reemplaza 'background_music' con el nombre de tu archivo en res/raw
+            mediaPlayer = MediaPlayer.create(requireContext(), R.raw.background_music)
+            mediaPlayer?.isLooping = true
+        }
+        mediaPlayer?.start()
+    }
+
+    // C7: Pausar el sonido cuando el usuario sale del fragmento o minimiza la app
+    override fun onStop() {
+        super.onStop()
+        mediaPlayer?.pause()
     }
 
     private fun setupAnimations() {
@@ -67,7 +88,14 @@ class HomeFragment : Fragment() {
             Toast.makeText(context, "Estrella", Toast.LENGTH_SHORT).show()
         }
         binding.btnPower.setOnClickListener {
-            Toast.makeText(context, "Sonido/Energía", Toast.LENGTH_SHORT).show()
+            // Opcional: Podrías usar este botón para mutear/activar el sonido
+            if (mediaPlayer?.isPlaying == true) {
+                mediaPlayer?.pause()
+                Toast.makeText(context, "Sonido pausado", Toast.LENGTH_SHORT).show()
+            } else {
+                mediaPlayer?.start()
+                Toast.makeText(context, "Sonido activado", Toast.LENGTH_SHORT).show()
+            }
         }
         binding.btnInfo.setOnClickListener {
             Toast.makeText(context, "Instrucciones", Toast.LENGTH_SHORT).show()
@@ -133,8 +161,12 @@ class HomeFragment : Fragment() {
         binding.ivBottle.startAnimation(rotateAnim)
     }
 
+    // C7: Liberar recursos del MediaPlayer para evitar fugas de memoria
     override fun onDestroyView() {
         super.onDestroyView()
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+        mediaPlayer = null
         _binding = null
     }
 }
