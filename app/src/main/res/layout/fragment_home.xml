@@ -69,4 +69,62 @@
 
     </LinearLayout>
 
+    <!-- C4: Botella centrada con la imagen botella_aguardianteamarillo_homep -->
+    <ImageView
+        android:id="@+id/ivBottle"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:src="@drawable/botella_aguardianteamarillo_homep"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- C5: Contador sobre la botella -->
+    <TextView
+        android:id="@+id/tvCountdown"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#FF0000"
+        android:textSize="100sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/ivBottle"
+        app:layout_constraintEnd_toEndOf="@id/ivBottle"
+        app:layout_constraintStart_toStartOf="@id/ivBottle"
+        app:layout_constraintTop_toTopOf="@id/ivBottle"
+        tools:text="3"
+        tools:visibility="visible" />
+
+    <!-- C6: Botón con diseño de círculo y texto -->
+    <LinearLayout
+        android:id="@+id/btnPressMeContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="60dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:clickable="true"
+        android:focusable="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <View
+            android:id="@+id/vCircle"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:background="@drawable/ic_circle_button" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Presióname"
+            android:textColor="@color/black"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>
