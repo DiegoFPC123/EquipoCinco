@@ -1,10 +1,13 @@
 package com.example.pico_botella.ui.splash
 
+import android.graphics.LinearGradient
+import android.graphics.Shader
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AnimationUtils
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -33,6 +36,8 @@ class SplashFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        applyPremiumGradient()
+
         // 1. Iniciar animación de la botella
         val animation = AnimationUtils.loadAnimation(requireContext(), R.anim.bottle_animation)
         binding.ivBottle.startAnimation(animation)
@@ -44,9 +49,23 @@ class SplashFragment : Fragment() {
         }
     }
 
+    private fun applyPremiumGradient() {
+        binding.tvAppName.post {
+            val paint = binding.tvAppName.paint
+            val width = paint.measureText(binding.tvAppName.text.toString())
+            val textShader: Shader = LinearGradient(
+                0f, 0f, 0f, binding.tvAppName.height.toFloat(),
+                intArrayOf(
+                    ContextCompat.getColor(requireContext(), R.color.vibrant_orange_light),
+                    ContextCompat.getColor(requireContext(), R.color.vibrant_orange)
+                ), null, Shader.TileMode.CLAMP
+            )
+            binding.tvAppName.paint.shader = textShader
+            binding.tvAppName.invalidate()
+        }
+    }
+
     private fun navigateToHome() {
-        // Navegación segura usando Navigation Component
-        // El popUpTo se encarga de limpiar el Splash del backstack (definido en nav_graph.xml)
         if (isAdded) {
             findNavController().navigate(R.id.action_splashFragment_to_homeFragment)
         }

@@ -6,27 +6,39 @@
     android:layout_height="match_parent"
     android:background="@color/background_splash">
 
+    <!-- Iluminación sutil de fondo para efecto "studio" -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0.3"
+        android:background="@drawable/bg_splash_glow" />
+
     <ImageView
         android:id="@+id/ivBottle"
-        android:layout_width="150dp"
-        android:layout_height="150dp"
+        android:layout_width="220dp"
+        android:layout_height="220dp"
         android:contentDescription="@string/app_name"
-        android:src="@drawable/ic_bottle"
+        android:src="@drawable/botella_label"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.45" />
+        app:layout_constraintVertical_bias="0.4" />
 
     <TextView
         android:id="@+id/tvAppName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="32dp"
+        android:fontFamily="sans-serif-black"
+        android:letterSpacing="-0.03"
         android:text="pico botella"
-        android:textColor="@color/orange_pico"
-        android:textSize="32sp"
-        android:textStyle="bold"
+        android:textColor="@color/vibrant_orange"
+        android:textSize="48sp"
+        android:shadowColor="#80FF5A1F"
+        android:shadowDx="0"
+        android:shadowDy="0"
+        android:shadowRadius="20"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/ivBottle" />
