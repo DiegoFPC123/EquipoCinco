@@ -26,10 +26,7 @@ class HomeFragment : Fragment() {
     private lateinit var viewModel: HomeViewModel
     private var blinkAnimation: Animation? = null
     
-    // C7: Variable para el MediaPlayer
     private var mediaPlayer: MediaPlayer? = null
-    
-    // Para guardar la última posición de la botella y que el siguiente giro sea fluido
     private var lastAngle = 0f
 
     override fun onCreateView(
@@ -47,40 +44,34 @@ class HomeFragment : Fragment() {
         setupAnimations()
     }
 
-    // C7: Inicializar y reproducir automáticamente al iniciar el fragmento
     override fun onStart() {
         super.onStart()
         if (mediaPlayer == null) {
-            // Reemplaza 'background_music' con el nombre de tu archivo en res/raw
             mediaPlayer = MediaPlayer.create(requireContext(), R.raw.background_music)
             mediaPlayer?.isLooping = true
         }
-        mediaPlayer?.start()
+        // Solo iniciamos si no estaba pausado por el botón
+        if (!binding.btnPower.isActivated) {
+            mediaPlayer?.start()
+        }
     }
 
-    // C7: Pausar el sonido cuando el usuario sale del fragmento o minimiza la app
     override fun onStop() {
         super.onStop()
         mediaPlayer?.pause()
     }
 
     private fun setupAnimations() {
-        // C6: Configurar animación de parpadeo infinita para el círculo naranja
         try {
             blinkAnimation = AnimationUtils.loadAnimation(requireContext(), R.anim.blink)
             binding.vCircle.startAnimation(blinkAnimation)
-        } catch (e: Exception) {
-            // Si la animación no existe aún, evitamos el crash
-        }
+        } catch (e: Exception) {}
     }
 
     private fun setupClicks() {
         binding.btnPressMeContainer.setOnClickListener {
-            // Detener animación y ocultar el botón al iniciar el juego
             binding.vCircle.clearAnimation()
             binding.btnPressMeContainer.isVisible = false
-            
-            // C5: Iniciar contador regresivo
             startCountdown()
         }
 
@@ -88,13 +79,14 @@ class HomeFragment : Fragment() {
             Toast.makeText(context, "Estrella", Toast.LENGTH_SHORT).show()
         }
         binding.btnPower.setOnClickListener {
-            // Opcional: Podrías usar este botón para mutear/activar el sonido
             if (mediaPlayer?.isPlaying == true) {
                 mediaPlayer?.pause()
-                Toast.makeText(context, "Sonido pausado", Toast.LENGTH_SHORT).show()
+                it.isActivated = true // Cambia al icono con línea (Mute)
+                Toast.makeText(context, "Audio pausado", Toast.LENGTH_SHORT).show()
             } else {
                 mediaPlayer?.start()
-                Toast.makeText(context, "Sonido activado", Toast.LENGTH_SHORT).show()
+                it.isActivated = false // Cambia al icono normal
+                Toast.makeText(context, "Audio activo", Toast.LENGTH_SHORT).show()
             }
         }
         binding.btnInfo.setOnClickListener {
@@ -111,57 +103,45 @@ class HomeFragment : Fragment() {
     private fun startCountdown() {
         lifecycleScope.launch {
             binding.tvCountdown.isVisible = true
-            
-            // Conteo regresivo del 3 al 1 con delay de 1 segundo (usando Corrutinas)
             for (i in 3 downTo 1) {
                 binding.tvCountdown.text = i.toString()
-                delay(1000) // Suspensión que no bloquea el hilo principal
+                delay(1000)
             }
-            
             binding.tvCountdown.isVisible = false
             spinBottle()
         }
     }
 
     private fun spinBottle() {
-        // Generar un giro aleatorio (mínimo 2 vueltas completas para emoción)
         val randomSpin = Random.nextInt(3600).toFloat() + 720
         val newAngle = randomSpin
-        
         val pivotX = binding.ivBottle.width / 2f
         val pivotY = binding.ivBottle.height / 2f
         
-        // Animación de rotación desde la última posición conocida
-        val rotateAnim = RotateAnimation(
+        val rotateAnimation = RotateAnimation(
             lastAngle,
             newAngle,
             pivotX,
             pivotY
         ).apply {
             duration = 3000
-            fillAfter = true // Mantiene la botella en la posición final escogida
+            fillAfter = true
             interpolator = android.view.animation.DecelerateInterpolator()
         }
         
-        rotateAnim.setAnimationListener(object : Animation.AnimationListener {
+        rotateAnimation.setAnimationListener(object : Animation.AnimationListener {
             override fun onAnimationStart(animation: Animation?) {}
             override fun onAnimationRepeat(animation: Animation?) {}
             override fun onAnimationEnd(animation: Animation?) {
-                // Guardamos el ángulo actual para que el próximo giro sea coherente
                 lastAngle = newAngle % 360
-                
-                // Volvemos a mostrar el botón para permitir otra ronda
                 binding.btnPressMeContainer.isVisible = true
                 binding.vCircle.startAnimation(blinkAnimation)
-                
                 Toast.makeText(context, "¡Reto seleccionado!", Toast.LENGTH_SHORT).show()
             }
         })
-
-        binding.ivBottle.startAnimation(rotateAnim)
+        binding.ivBottle.startAnimation(rotateAnimation)
     }
 
-    // C7: Liberar recursos del MediaPlayer para evitar fugas de memoria
     override fun onDestroyView() {
         super.onDestroyView()
         mediaPlayer?.stop()
