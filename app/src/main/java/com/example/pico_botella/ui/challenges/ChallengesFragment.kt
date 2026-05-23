@@ -11,6 +11,7 @@ import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.example.pico_botella.data.entity.Challenge
 import com.example.pico_botella.databinding.FragmentChallengesBinding
+import com.example.pico_botella.databinding.DialogDeleteChallengeBinding
 
 class ChallengesFragment : Fragment() {
 
@@ -44,7 +45,7 @@ class ChallengesFragment : Fragment() {
     private fun setupRecyclerView() {
         adapter = ChallengesAdapter(
             onEdit = { challenge -> showChallengeDialog(challenge) },
-            onDelete = { challenge -> viewModel.deleteChallenge(challenge) }
+            onDelete = { challenge -> showDeleteConfirmationDialog(challenge) }
         )
         binding.rvChallenges.adapter = adapter
     }
@@ -85,6 +86,29 @@ class ChallengesFragment : Fragment() {
             }
             .setNegativeButton("Cancelar", null)
             .show()
+    }
+
+    private fun showDeleteConfirmationDialog(challenge: Challenge) {
+        val dialogBinding = DialogDeleteChallengeBinding.inflate(layoutInflater)
+
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(dialogBinding.root)
+            .setCancelable(false)
+            .create()
+
+        dialogBinding.tvChallengeDescription.text = challenge.description
+
+        dialogBinding.btnNo.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialogBinding.btnSi.setOnClickListener {
+            viewModel.deleteChallenge(challenge)
+            dialog.dismiss()
+        }
+
+        dialog.show()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
     }
 
     override fun onDestroyView() {

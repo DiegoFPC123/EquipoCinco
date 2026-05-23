@@ -14,6 +14,9 @@ interface ChallengeDao {
     @Query("SELECT * FROM challenges ORDER BY createdAt DESC")
     fun getAllChallenges(): Flow<List<Challenge>>
 
+    @Query("SELECT * FROM challenges ORDER BY RANDOM() LIMIT 1")
+    suspend fun getRandomChallenge(): Challenge?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertChallenge(challenge: Challenge)
 

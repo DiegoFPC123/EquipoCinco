@@ -11,12 +11,17 @@ import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.view.animation.RotateAnimation
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.bumptech.glide.Glide
 import com.example.pico_botella.R
+import com.example.pico_botella.data.entity.Challenge
+import com.example.pico_botella.data.network.Pokemon
+import com.example.pico_botella.databinding.DialogRandomChallengeBinding
 import com.example.pico_botella.databinding.FragmentHomeBinding
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -56,6 +61,13 @@ class HomeFragment : Fragment() {
                 if (isResumed) mediaPlayer?.start()
             } else {
                 mediaPlayer?.pause()
+            }
+        }
+
+        viewModel.randomChallenge.observe(viewLifecycleOwner) { result ->
+            result?.let { (challenge, pokemon) ->
+                showRandomChallengeDialog(challenge, pokemon)
+                viewModel.clearRandomChallenge()
             }
         }
     }
@@ -172,12 +184,39 @@ class HomeFragment : Fragment() {
             override fun onAnimationRepeat(animation: Animation?) {}
             override fun onAnimationEnd(animation: Animation?) {
                 lastAngle = newAngle % 360
-                binding.btnPressMeContainer.isVisible = true
-                binding.vCircle.startAnimation(blinkAnimation)
-                Toast.makeText(context, "¡Reto seleccionado!", Toast.LENGTH_SHORT).show()
+                viewModel.getRandomChallenge()
             }
         })
         binding.ivBottle.startAnimation(rotateAnimation)
+    }
+
+    private fun showRandomChallengeDialog(challenge: Challenge?, pokemon: Pokemon?) {
+        val dialogBinding = DialogRandomChallengeBinding.inflate(layoutInflater)
+        
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(dialogBinding.root)
+            .setCancelable(false)
+            .create()
+
+        dialogBinding.tvChallenge.text = challenge?.description ?: "No hay retos disponibles"
+
+        // Cargar imagen de Pokemon
+        pokemon?.let {
+            val imgUrl = it.img.replace("http://", "https://")
+            Glide.with(this)
+                .load(imgUrl)
+                .placeholder(R.drawable.botella_label)
+                .into(dialogBinding.ivPokemon)
+        }
+
+        dialogBinding.btnClose.setOnClickListener {
+            binding.btnPressMeContainer.isVisible = true
+            binding.vCircle.startAnimation(blinkAnimation)
+            dialog.dismiss()
+        }
+
+        dialog.show()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
     }
 
     override fun onDestroyView() {
