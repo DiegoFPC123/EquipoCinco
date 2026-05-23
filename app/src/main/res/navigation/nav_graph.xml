@@ -25,9 +25,6 @@
         <action
             android:id="@+id/action_homeFragment_to_instructionsFragment"
             app:destination="@id/instructionsFragment" />
-        <action
-            android:id="@+id/action_homeFragment_to_challengesFragment"
-            app:destination="@id/challengesFragment" />
     </fragment>
 
     <fragment
@@ -35,10 +32,4 @@
         android:name="com.example.pico_botella.ui.instructions.InstructionsFragment"
         android:label="InstructionsFragment"
         tools:layout="@layout/fragment_instructions" />
-
-    <fragment
-        android:id="@+id/challengesFragment"
-        android:name="com.example.pico_botella.ui.challenges.ChallengesFragment"
-        android:label="ChallengesFragment"
-        tools:layout="@layout/fragment_challenges" />
 </navigation>
