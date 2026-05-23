@@ -13,8 +13,9 @@ import android.view.animation.RotateAnimation
 import android.widget.Toast
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import com.example.pico_botella.R
 import com.example.pico_botella.databinding.FragmentHomeBinding
 import kotlinx.coroutines.delay
@@ -25,9 +26,10 @@ class HomeFragment : Fragment() {
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
-    private lateinit var viewModel: HomeViewModel
-    private var blinkAnimation: Animation? = null
     
+    private val viewModel: HomeViewModel by activityViewModels()
+    
+    private var blinkAnimation: Animation? = null
     private var mediaPlayer: MediaPlayer? = null
     private var lastAngle = 0f
 
@@ -36,30 +38,43 @@ class HomeFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
-        viewModel = ViewModelProvider(this).get(HomeViewModel::class.java)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupObservers()
         setupClicks()
         setupAnimations()
     }
 
-    override fun onStart() {
-        super.onStart()
-        if (mediaPlayer == null) {
-            mediaPlayer = MediaPlayer.create(requireContext(), R.raw.background_music)
-            mediaPlayer?.isLooping = true
+    private fun setupObservers() {
+        viewModel.isAudioEnabled.observe(viewLifecycleOwner) { isEnabled ->
+            binding.btnPower.isActivated = !isEnabled
+            if (isEnabled) {
+                if (mediaPlayer == null) initMediaPlayer()
+                if (isResumed) mediaPlayer?.start()
+            } else {
+                mediaPlayer?.pause()
+            }
         }
-        // Solo iniciamos si no estaba pausado por el botón
-        if (!binding.btnPower.isActivated) {
+    }
+
+    private fun initMediaPlayer() {
+        mediaPlayer = MediaPlayer.create(requireContext(), R.raw.background_music)
+        mediaPlayer?.isLooping = true
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (viewModel.isAudioEnabled.value == true) {
+            if (mediaPlayer == null) initMediaPlayer()
             mediaPlayer?.start()
         }
     }
 
-    override fun onStop() {
-        super.onStop()
+    override fun onPause() {
+        super.onPause()
         mediaPlayer?.pause()
     }
 
@@ -87,23 +102,21 @@ class HomeFragment : Fragment() {
                 Toast.makeText(context, "No se pudo abrir la tienda", Toast.LENGTH_SHORT).show()
             }
         }
+
         binding.btnPower.setOnClickListener {
-            if (mediaPlayer?.isPlaying == true) {
-                mediaPlayer?.pause()
-                it.isActivated = true // Cambia al icono con línea (Mute)
-                Toast.makeText(context, "Audio pausado", Toast.LENGTH_SHORT).show()
-            } else {
-                mediaPlayer?.start()
-                it.isActivated = false // Cambia al icono normal
-                Toast.makeText(context, "Audio activo", Toast.LENGTH_SHORT).show()
-            }
+            viewModel.toggleAudio()
+            val message = if (viewModel.isAudioEnabled.value == true) "Audio activo" else "Audio pausado"
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
+
         binding.btnInfo.setOnClickListener {
-            Toast.makeText(context, "Instrucciones", Toast.LENGTH_SHORT).show()
+            findNavController().navigate(R.id.action_homeFragment_to_instructionsFragment)
         }
+
         binding.btnAdd.setOnClickListener {
             Toast.makeText(context, "Agregar retos", Toast.LENGTH_SHORT).show()
         }
+
         binding.btnShare.setOnClickListener {
             Toast.makeText(context, "Compartir", Toast.LENGTH_SHORT).show()
         }
@@ -153,7 +166,6 @@ class HomeFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = null
         _binding = null
