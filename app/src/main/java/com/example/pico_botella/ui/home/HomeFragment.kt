@@ -118,8 +118,24 @@ class HomeFragment : Fragment() {
         }
 
         binding.btnShare.setOnClickListener {
-            Toast.makeText(context, "Compartir", Toast.LENGTH_SHORT).show()
+            shareApp()
         }
+    }
+
+    private fun shareApp() {
+        val appTitle = "App pico botella"
+        val slogan = "Solo los valientes lo juegan !!"
+        val url = "https://play.google.com/store/apps/details?id=com.nequi.MobileApp&hl=es_419&gl=es"
+        val shareMessage = "$appTitle\n$slogan\n$url"
+
+        val sendIntent: Intent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_TEXT, shareMessage)
+            type = "text/plain"
+        }
+
+        val shareIntent = Intent.createChooser(sendIntent, "Compartir")
+        startActivity(shareIntent)
     }
 
     private fun startCountdown() {
