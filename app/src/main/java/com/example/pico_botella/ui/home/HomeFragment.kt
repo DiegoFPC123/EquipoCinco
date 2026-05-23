@@ -1,6 +1,8 @@
 package com.example.pico_botella.ui.home
 
+import android.content.Intent
 import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -76,7 +78,14 @@ class HomeFragment : Fragment() {
         }
 
         binding.btnStar.setOnClickListener {
-            Toast.makeText(context, "Estrella", Toast.LENGTH_SHORT).show()
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                data = Uri.parse("https://play.google.com/store/apps/details?id=com.nequi.MobileApp&hl=es_419&gl=es")
+            }
+            try {
+                startActivity(intent)
+            } catch (e: Exception) {
+                Toast.makeText(context, "No se pudo abrir la tienda", Toast.LENGTH_SHORT).show()
+            }
         }
         binding.btnPower.setOnClickListener {
             if (mediaPlayer?.isPlaying == true) {
