@@ -35,7 +35,8 @@ class HomeFragment : Fragment() {
     private val viewModel: HomeViewModel by activityViewModels()
     
     private var blinkAnimation: Animation? = null
-    private var mediaPlayer: MediaPlayer? = null
+    private var backgroundMediaPlayer: MediaPlayer? = null
+    private var bottleMediaPlayer: MediaPlayer? = null
     private var lastAngle = 0f
 
     override fun onCreateView(
@@ -57,10 +58,10 @@ class HomeFragment : Fragment() {
         viewModel.isAudioEnabled.observe(viewLifecycleOwner) { isEnabled ->
             binding.btnPower.isActivated = !isEnabled
             if (isEnabled) {
-                if (mediaPlayer == null) initMediaPlayer()
-                if (isResumed) mediaPlayer?.start()
+                if (backgroundMediaPlayer == null) initBackgroundPlayer()
+                if (isResumed) backgroundMediaPlayer?.start()
             } else {
-                mediaPlayer?.pause()
+                backgroundMediaPlayer?.pause()
             }
         }
 
@@ -72,22 +73,31 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun initMediaPlayer() {
-        mediaPlayer = MediaPlayer.create(requireContext(), R.raw.background_music)
-        mediaPlayer?.isLooping = true
+    private fun initBackgroundPlayer() {
+        backgroundMediaPlayer = MediaPlayer.create(requireContext(), R.raw.background_music)
+        backgroundMediaPlayer?.isLooping = true
+    }
+
+    private fun initBottlePlayer() {
+        // Asumiendo que el archivo se llama sonido_botella.mp3
+        bottleMediaPlayer = MediaPlayer.create(requireContext(), R.raw.sonido_botella)
+        bottleMediaPlayer?.isLooping = true
     }
 
     override fun onResume() {
         super.onResume()
         if (viewModel.isAudioEnabled.value == true) {
-            if (mediaPlayer == null) initMediaPlayer()
-            mediaPlayer?.start()
+            if (backgroundMediaPlayer == null) initBackgroundPlayer()
+            backgroundMediaPlayer?.start()
         }
     }
 
     override fun onPause() {
         super.onPause()
-        mediaPlayer?.pause()
+        backgroundMediaPlayer?.pause()
+        bottleMediaPlayer?.stop()
+        bottleMediaPlayer?.release()
+        bottleMediaPlayer = null
     }
 
     private fun setupAnimations() {
@@ -99,9 +109,7 @@ class HomeFragment : Fragment() {
 
     private fun setupClicks() {
         binding.btnPressMeContainer.setOnClickListener {
-            binding.vCircle.clearAnimation()
-            binding.btnPressMeContainer.isVisible = false
-            startCountdown()
+            startGameSequence()
         }
 
         binding.btnStar.setOnClickListener {
@@ -117,8 +125,6 @@ class HomeFragment : Fragment() {
 
         binding.btnPower.setOnClickListener {
             viewModel.toggleAudio()
-            val message = if (viewModel.isAudioEnabled.value == true) "Audio activo" else "Audio pausado"
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
 
         binding.btnInfo.setOnClickListener {
@@ -150,44 +156,76 @@ class HomeFragment : Fragment() {
         startActivity(shareIntent)
     }
 
-    private fun startCountdown() {
-        lifecycleScope.launch {
-            binding.tvCountdown.isVisible = true
-            for (i in 3 downTo 1) {
-                binding.tvCountdown.text = i.toString()
-                delay(1000)
-            }
-            binding.tvCountdown.isVisible = false
-            spinBottle()
+    private fun startGameSequence() {
+        // C7: El botón desaparece mientras la partida está en proceso
+        binding.vCircle.clearAnimation()
+        binding.btnPressMeContainer.isVisible = false
+
+        // C8: Pausar audio de fondo si estaba ON
+        if (viewModel.isAudioEnabled.value == true) {
+            backgroundMediaPlayer?.pause()
         }
+
+        spinBottle()
     }
 
     private fun spinBottle() {
-        val randomSpin = Random.nextInt(3600).toFloat() + 720
-        val newAngle = randomSpin
+        // C1: Giro entre 3 y 5 segundos
+        val spinDuration = Random.nextLong(3000, 5001)
+
+        // C3: Giro aleatorio
+        val randomDegrees = Random.nextInt(360, 3600).toFloat()
+        val newAngle = lastAngle + randomDegrees
+
         val pivotX = binding.ivBottle.width / 2f
         val pivotY = binding.ivBottle.height / 2f
         
+        // C4: Empieza desde donde se detuvo el anterior
         val rotateAnimation = RotateAnimation(
             lastAngle,
             newAngle,
             pivotX,
             pivotY
         ).apply {
-            duration = 3000
+            duration = spinDuration
             fillAfter = true
             interpolator = android.view.animation.DecelerateInterpolator()
         }
         
         rotateAnimation.setAnimationListener(object : Animation.AnimationListener {
-            override fun onAnimationStart(animation: Animation?) {}
+            override fun onAnimationStart(animation: Animation?) {
+                // C2: Sonido de botella girando
+                initBottlePlayer()
+                bottleMediaPlayer?.start()
+            }
+
             override fun onAnimationRepeat(animation: Animation?) {}
+
             override fun onAnimationEnd(animation: Animation?) {
+                // C2: Se pausa al detenerse
+                bottleMediaPlayer?.stop()
+                bottleMediaPlayer?.release()
+                bottleMediaPlayer = null
+
                 lastAngle = newAngle % 360
-                viewModel.getRandomChallenge()
+                startCountdown()
             }
         })
         binding.ivBottle.startAnimation(rotateAnimation)
+    }
+
+    private fun startCountdown() {
+        // C5: Cuenta regresiva naranja (3, 2, 1, 0)
+        lifecycleScope.launch {
+            binding.tvCountdown.isVisible = true
+            for (i in 3 downTo 0) {
+                binding.tvCountdown.text = i.toString()
+                delay(1000)
+            }
+            binding.tvCountdown.isVisible = false
+            // C6: Al llegar a 0, mostrar el diálogo de HU-12
+            viewModel.getRandomChallenge()
+        }
     }
 
     private fun showRandomChallengeDialog(challenge: Challenge?, pokemon: Pokemon?) {
@@ -200,7 +238,6 @@ class HomeFragment : Fragment() {
 
         dialogBinding.tvChallenge.text = challenge?.description ?: "No hay retos disponibles"
 
-        // Cargar imagen de Pokemon
         pokemon?.let {
             val imgUrl = it.img.replace("http://", "https://")
             Glide.with(this)
@@ -210,8 +247,16 @@ class HomeFragment : Fragment() {
         }
 
         dialogBinding.btnClose.setOnClickListener {
+            // Al cerrar, el juego regresa al home listo para una nueva partida
+            // C7: El botón reaparece
             binding.btnPressMeContainer.isVisible = true
             binding.vCircle.startAnimation(blinkAnimation)
+
+            // C8: Reanudar audio de fondo si estaba ON
+            if (viewModel.isAudioEnabled.value == true) {
+                backgroundMediaPlayer?.start()
+            }
+
             dialog.dismiss()
         }
 
@@ -221,8 +266,10 @@ class HomeFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        mediaPlayer?.release()
-        mediaPlayer = null
+        backgroundMediaPlayer?.release()
+        backgroundMediaPlayer = null
+        bottleMediaPlayer?.release()
+        bottleMediaPlayer = null
         _binding = null
     }
 }
