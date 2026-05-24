@@ -21,5 +21,24 @@
         android:id="@+id/homeFragment"
         android:name="com.example.pico_botella.ui.home.HomeFragment"
         android:label="HomeFragment"
-        tools:layout="@layout/fragment_home" />
+        tools:layout="@layout/fragment_home">
+        <action
+            android:id="@+id/action_homeFragment_to_instructionsFragment"
+            app:destination="@id/instructionsFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_challengesFragment"
+            app:destination="@id/challengesFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/instructionsFragment"
+        android:name="com.example.pico_botella.ui.instructions.InstructionsFragment"
+        android:label="InstructionsFragment"
+        tools:layout="@layout/fragment_instructions" />
+
+    <fragment
+        android:id="@+id/challengesFragment"
+        android:name="com.example.pico_botella.ui.challenges.ChallengesFragment"
+        android:label="ChallengesFragment"
+        tools:layout="@layout/fragment_challenges" />
 </navigation>
