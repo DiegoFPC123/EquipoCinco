@@ -1,13 +1,18 @@
 package com.example.pico_botella.ui.challenges
 
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
+import com.example.pico_botella.R
 import com.example.pico_botella.data.entity.Challenge
 import com.example.pico_botella.databinding.FragmentChallengesBinding
 import com.example.pico_botella.databinding.DialogDeleteChallengeBinding
@@ -69,9 +74,43 @@ class ChallengesFragment : Fragment() {
             .setView(dialogBinding.root)
             .create()
 
-        // Configuración según criterios
+        // Configuración inicial de títulos
         dialogBinding.tvTitle.text = if (challenge == null) "Agregar reto" else "Editar reto"
         dialogBinding.etChallenge.setText(challenge?.description)
+
+        // --- IMPLEMENTACIÓN CRITERIO 5 ---
+        
+        // Función para actualizar el estado del botón Guardar
+        val updateSaveButtonState = {
+            val text = dialogBinding.etChallenge.text.toString()
+            val isValid = text.isNotBlank()
+            
+            dialogBinding.btnSave.isEnabled = isValid
+            
+            if (isValid) {
+                // Estado Habilitado: Naranja, Alpha normal
+                dialogBinding.btnSave.backgroundTintList = ColorStateList.valueOf(
+                    ContextCompat.getColor(requireContext(), R.color.orange_pico)
+                )
+                dialogBinding.btnSave.alpha = 1.0f
+            } else {
+                // Estado Deshabilitado: Gris, Alpha reducido
+                dialogBinding.btnSave.backgroundTintList = ColorStateList.valueOf(
+                    Color.parseColor("#E0E0E0")
+                )
+                dialogBinding.btnSave.alpha = 0.5f
+            }
+        }
+
+        // Ejecutar validación inicial
+        updateSaveButtonState()
+
+        // Escuchar cambios en el texto
+        dialogBinding.etChallenge.doAfterTextChanged {
+            updateSaveButtonState()
+        }
+
+        // --- FIN CRITERIO 5 ---
 
         dialogBinding.btnCancel.setOnClickListener {
             dialog.dismiss()
@@ -90,7 +129,6 @@ class ChallengesFragment : Fragment() {
         }
 
         dialog.show()
-        // Fondo transparente para que se vea el redondeado del CardView
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
     }
 
