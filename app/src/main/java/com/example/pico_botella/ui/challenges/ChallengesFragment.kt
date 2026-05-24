@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.widget.doAfterTextChanged
@@ -68,61 +69,75 @@ class ChallengesFragment : Fragment() {
     }
 
     private fun showChallengeDialog(challenge: Challenge? = null) {
-        val dialogBinding = DialogAddChallengeBinding.inflate(layoutInflater)
-        
-        val dialog = AlertDialog.Builder(requireContext())
-            .setView(dialogBinding.root)
-            .setCancelable(false) // CRITERIO 7: Impide cerrar al tocar fuera o presionar atrás
-            .create()
-
-        // Configuración inicial de títulos
-        dialogBinding.tvTitle.text = if (challenge == null) "Agregar reto" else "Editar reto"
-        dialogBinding.etChallenge.setText(challenge?.description)
-
-        // --- IMPLEMENTACIÓN CRITERIO 5 (Validación Visual) ---
-        val updateSaveButtonState = {
-            val text = dialogBinding.etChallenge.text.toString()
-            val isValid = text.isNotBlank()
+        if (challenge == null) {
+            // CASO AGREGAR: Se utiliza el diseño personalizado solicitado (Criterios 1-4)
+            val dialogBinding = DialogAddChallengeBinding.inflate(layoutInflater)
             
-            dialogBinding.btnSave.isEnabled = isValid
-            
-            if (isValid) {
-                dialogBinding.btnSave.backgroundTintList = ColorStateList.valueOf(
-                    ContextCompat.getColor(requireContext(), R.color.orange_pico)
-                )
-                dialogBinding.btnSave.alpha = 1.0f
-            } else {
-                dialogBinding.btnSave.backgroundTintList = ColorStateList.valueOf(
-                    Color.parseColor("#E0E0E0")
-                )
-                dialogBinding.btnSave.alpha = 0.5f
-            }
-        }
+            val dialog = AlertDialog.Builder(requireContext())
+                .setView(dialogBinding.root)
+                .setCancelable(false)
+                .create()
 
-        updateSaveButtonState()
-        dialogBinding.etChallenge.doAfterTextChanged {
-            updateSaveButtonState()
-        }
+            dialogBinding.tvTitle.text = "Agregar reto"
+            dialogBinding.etChallenge.setText("")
 
-        // --- CRITERIO 7: El cierre solo ocurre por botones explícitos ---
-        dialogBinding.btnCancel.setOnClickListener {
-            dialog.dismiss()
-        }
-
-        dialogBinding.btnSave.setOnClickListener {
-            val description = dialogBinding.etChallenge.text.toString()
-            if (description.isNotBlank()) {
-                if (challenge == null) {
-                    viewModel.addChallenge(description)
+            // Lógica de validación del botón guardar para el diseño nuevo
+            val updateSaveButtonState = {
+                val text = dialogBinding.etChallenge.text.toString()
+                val isValid = text.isNotBlank()
+                dialogBinding.btnSave.isEnabled = isValid
+                if (isValid) {
+                    dialogBinding.btnSave.backgroundTintList = ColorStateList.valueOf(
+                        ContextCompat.getColor(requireContext(), R.color.orange_pico)
+                    )
+                    dialogBinding.btnSave.alpha = 1.0f
                 } else {
-                    viewModel.updateChallenge(challenge.copy(description = description))
+                    dialogBinding.btnSave.backgroundTintList = ColorStateList.valueOf(
+                        Color.parseColor("#E0E0E0")
+                    )
+                    dialogBinding.btnSave.alpha = 0.5f
                 }
+            }
+
+            updateSaveButtonState()
+            dialogBinding.etChallenge.doAfterTextChanged {
+                updateSaveButtonState()
+            }
+
+            dialogBinding.btnCancel.setOnClickListener {
                 dialog.dismiss()
             }
-        }
 
-        dialog.show()
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+            dialogBinding.btnSave.setOnClickListener {
+                val description = dialogBinding.etChallenge.text.toString()
+                if (description.isNotBlank()) {
+                    viewModel.addChallenge(description)
+                    dialog.dismiss()
+                }
+            }
+
+            dialog.show()
+            dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        } else {
+            // CASO EDITAR: Se utiliza el diseño estándar anterior
+            val editText = EditText(requireContext()).apply {
+                hint = "Escribe el reto aquí..."
+                setText(challenge.description)
+                setPadding(48, 48, 48, 48)
+            }
+
+            AlertDialog.Builder(requireContext())
+                .setTitle("Editar Reto")
+                .setView(editText)
+                .setPositiveButton("Guardar") { _, _ ->
+                    val description = editText.text.toString()
+                    if (description.isNotBlank()) {
+                        viewModel.updateChallenge(challenge.copy(description = description))
+                    }
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+        }
     }
 
     private fun showDeleteConfirmationDialog(challenge: Challenge) {
