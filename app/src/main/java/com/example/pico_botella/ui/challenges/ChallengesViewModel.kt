@@ -6,27 +6,35 @@ import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.example.pico_botella.data.database.AppDatabase
 import com.example.pico_botella.data.entity.Challenge
+import com.example.pico_botella.data.repository.ChallengeRepository
 import kotlinx.coroutines.launch
 
 class ChallengesViewModel(application: Application) : AndroidViewModel(application) {
-    private val dao = AppDatabase.getDatabase(application).challengeDao()
-    val allChallenges = dao.getAllChallenges().asLiveData()
+    
+    private val repository: ChallengeRepository
+    val allChallenges: androidx.lifecycle.LiveData<List<Challenge>>
+
+    init {
+        val dao = AppDatabase.getDatabase(application).challengeDao()
+        repository = ChallengeRepository(dao)
+        allChallenges = repository.allChallenges.asLiveData()
+    }
 
     fun addChallenge(description: String) {
         viewModelScope.launch {
-            dao.insertChallenge(Challenge(description = description))
+            repository.insertChallenge(Challenge(description = description))
         }
     }
 
     fun updateChallenge(challenge: Challenge) {
         viewModelScope.launch {
-            dao.updateChallenge(challenge)
+            repository.updateChallenge(challenge)
         }
     }
 
     fun deleteChallenge(challenge: Challenge) {
         viewModelScope.launch {
-            dao.deleteChallenge(challenge)
+            repository.deleteChallenge(challenge)
         }
     }
 }
