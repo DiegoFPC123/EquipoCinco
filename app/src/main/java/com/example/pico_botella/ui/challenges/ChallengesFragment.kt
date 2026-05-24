@@ -72,15 +72,14 @@ class ChallengesFragment : Fragment() {
         
         val dialog = AlertDialog.Builder(requireContext())
             .setView(dialogBinding.root)
+            .setCancelable(false) // CRITERIO 7: Impide cerrar al tocar fuera o presionar atrás
             .create()
 
         // Configuración inicial de títulos
         dialogBinding.tvTitle.text = if (challenge == null) "Agregar reto" else "Editar reto"
         dialogBinding.etChallenge.setText(challenge?.description)
 
-        // --- IMPLEMENTACIÓN CRITERIO 5 ---
-        
-        // Función para actualizar el estado del botón Guardar
+        // --- IMPLEMENTACIÓN CRITERIO 5 (Validación Visual) ---
         val updateSaveButtonState = {
             val text = dialogBinding.etChallenge.text.toString()
             val isValid = text.isNotBlank()
@@ -88,13 +87,11 @@ class ChallengesFragment : Fragment() {
             dialogBinding.btnSave.isEnabled = isValid
             
             if (isValid) {
-                // Estado Habilitado: Naranja, Alpha normal
                 dialogBinding.btnSave.backgroundTintList = ColorStateList.valueOf(
                     ContextCompat.getColor(requireContext(), R.color.orange_pico)
                 )
                 dialogBinding.btnSave.alpha = 1.0f
             } else {
-                // Estado Deshabilitado: Gris, Alpha reducido
                 dialogBinding.btnSave.backgroundTintList = ColorStateList.valueOf(
                     Color.parseColor("#E0E0E0")
                 )
@@ -102,16 +99,12 @@ class ChallengesFragment : Fragment() {
             }
         }
 
-        // Ejecutar validación inicial
         updateSaveButtonState()
-
-        // Escuchar cambios en el texto
         dialogBinding.etChallenge.doAfterTextChanged {
             updateSaveButtonState()
         }
 
-        // --- FIN CRITERIO 5 ---
-
+        // --- CRITERIO 7: El cierre solo ocurre por botones explícitos ---
         dialogBinding.btnCancel.setOnClickListener {
             dialog.dismiss()
         }
