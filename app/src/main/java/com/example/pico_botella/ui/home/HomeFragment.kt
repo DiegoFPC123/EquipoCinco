@@ -114,7 +114,7 @@ class HomeFragment : Fragment() {
         }
 
         binding.btnAdd.setOnClickListener {
-            Toast.makeText(context, "Agregar retos", Toast.LENGTH_SHORT).show()
+            findNavController().navigate(R.id.action_homeFragment_to_challengesFragment)
         }
 
         binding.btnShare.setOnClickListener {
