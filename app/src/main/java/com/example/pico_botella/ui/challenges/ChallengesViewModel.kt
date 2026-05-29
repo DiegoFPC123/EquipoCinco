@@ -26,6 +26,12 @@ class ChallengesViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    fun updateChallenge(challenge: Challenge) {
+        viewModelScope.launch {
+            repository.updateChallenge(challenge)
+        }
+    }
+
     fun deleteChallenge(challenge: Challenge) {
         viewModelScope.launch {
             repository.deleteChallenge(challenge)

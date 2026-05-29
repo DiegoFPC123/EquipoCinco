@@ -9,6 +9,7 @@ import com.example.pico_botella.databinding.ItemChallengeBinding
 import com.example.pico_botella.data.entity.Challenge
 
 class ChallengesAdapter(
+    private val onEditClick: (Challenge) -> Unit,
     private val onDeleteClick: (Challenge) -> Unit
 ) : ListAdapter<Challenge, ChallengesAdapter.ChallengeViewHolder>(ChallengeDiffCallback()) {
 
@@ -18,17 +19,20 @@ class ChallengesAdapter(
     }
 
     override fun onBindViewHolder(holder: ChallengeViewHolder, position: Int) {
-        holder.bind(getItem(position), onDeleteClick)
+        holder.bind(getItem(position), onEditClick, onDeleteClick)
     }
 
     class ChallengeViewHolder(private val binding: ItemChallengeBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(challenge: Challenge, onDeleteClick: (Challenge) -> Unit) {
+        fun bind(challenge: Challenge, onEditClick: (Challenge) -> Unit, onDeleteClick: (Challenge) -> Unit) {
             binding.tvChallengeDescription.text = challenge.description
+            
+            binding.btnEdit.setOnClickListener {
+                onEditClick(challenge)
+            }
+            
             binding.btnDelete.setOnClickListener {
                 onDeleteClick(challenge)
             }
-            // El botón de editar es solo visual por requerimiento
-            binding.btnEdit.setOnClickListener(null)
         }
     }
 
