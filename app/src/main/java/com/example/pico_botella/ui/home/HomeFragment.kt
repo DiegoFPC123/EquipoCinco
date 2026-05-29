@@ -11,13 +11,16 @@ import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.view.animation.RotateAnimation
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.bumptech.glide.Glide
 import com.example.pico_botella.R
 import com.example.pico_botella.databinding.FragmentHomeBinding
+import com.example.pico_botella.databinding.DialogRandomChallengeBinding
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.random.Random
@@ -56,6 +59,24 @@ class HomeFragment : Fragment() {
                 if (isResumed) mediaPlayer?.start()
             } else {
                 mediaPlayer?.pause()
+            }
+        }
+
+        // C3 y C2: Observamos el resultado cuando ambos datos están listos
+        viewModel.challengeResult.observe(viewLifecycleOwner) { result ->
+            result?.let {
+                showRandomChallengeDialog(it)
+                viewModel.clearChallengeResult()
+            }
+        }
+
+        viewModel.error.observe(viewLifecycleOwner) { errorMsg ->
+            errorMsg?.let {
+                Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+                // Si hay error, permitimos jugar de nuevo
+                binding.btnPressMeContainer.isVisible = true
+                binding.vCircle.startAnimation(blinkAnimation)
+                viewModel.clearError()
             }
         }
     }
@@ -105,8 +126,6 @@ class HomeFragment : Fragment() {
 
         binding.btnPower.setOnClickListener {
             viewModel.toggleAudio()
-            val message = if (viewModel.isAudioEnabled.value == true) "Audio activo" else "Audio pausado"
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
 
         binding.btnInfo.setOnClickListener {
@@ -135,16 +154,15 @@ class HomeFragment : Fragment() {
     }
 
     private fun spinBottle() {
-        val randomSpin = Random.nextInt(3600).toFloat() + 720
-        val newAngle = randomSpin
-        val pivotX = binding.ivBottle.width / 2f
-        val pivotY = binding.ivBottle.height / 2f
+        // Aseguramos aleatoriedad visual: giro mínimo de 5 vueltas + ángulo al azar
+        val randomSpin = (Random.nextInt(5) + 5) * 360 + Random.nextInt(360)
+        val newAngle = lastAngle + randomSpin.toFloat()
         
         val rotateAnimation = RotateAnimation(
             lastAngle,
             newAngle,
-            pivotX,
-            pivotY
+            RotateAnimation.RELATIVE_TO_SELF, 0.5f,
+            RotateAnimation.RELATIVE_TO_SELF, 0.5f
         ).apply {
             duration = 3000
             fillAfter = true
@@ -156,12 +174,42 @@ class HomeFragment : Fragment() {
             override fun onAnimationRepeat(animation: Animation?) {}
             override fun onAnimationEnd(animation: Animation?) {
                 lastAngle = newAngle % 360
-                binding.btnPressMeContainer.isVisible = true
-                binding.vCircle.startAnimation(blinkAnimation)
-                Toast.makeText(context, "¡Reto seleccionado!", Toast.LENGTH_SHORT).show()
+                // Solicitamos el reto al terminar el giro
+                viewModel.fetchRandomChallengeAndPokemon()
             }
         })
         binding.ivBottle.startAnimation(rotateAnimation)
+    }
+
+    private fun showRandomChallengeDialog(result: ChallengeResult) {
+        val dialogBinding = DialogRandomChallengeBinding.inflate(layoutInflater)
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(dialogBinding.root)
+            .setCancelable(false) // C6: Solo se cierra con "Cerrar"
+            .create()
+
+        // C3: Texto del reto (traído desde SQLite)
+        dialogBinding.tvChallenge.text = result.challenge.description
+
+        // C2: Carga de imagen Pokemon desde la API
+        val imageUrl = result.pokemon.img.replace("http://", "https://")
+        Glide.with(this)
+            .load(imageUrl)
+            .placeholder(R.drawable.ic_launcher_foreground)
+            .error(R.drawable.ic_launcher_foreground)
+            .into(dialogBinding.ivPokemon)
+
+        // C4: Botón "Cerrar"
+        dialogBinding.btnClose.setOnClickListener {
+            dialog.dismiss()
+            // C5: El juego regresa al home listo para una nueva partida
+            binding.btnPressMeContainer.isVisible = true
+            binding.vCircle.startAnimation(blinkAnimation)
+        }
+
+        dialog.show()
+        // C1: Fondo con transparencia sutil
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
     }
 
     override fun onDestroyView() {
