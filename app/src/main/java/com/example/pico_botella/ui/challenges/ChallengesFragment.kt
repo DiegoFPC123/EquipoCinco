@@ -10,13 +10,17 @@ import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.example.pico_botella.databinding.FragmentChallengesBinding
 import com.example.pico_botella.databinding.DialogAddChallengeBinding
+import com.example.pico_botella.databinding.DialogDeleteChallengeBinding
+import com.example.pico_botella.data.entity.Challenge
 
 class ChallengesFragment : Fragment() {
 
     private var _binding: FragmentChallengesBinding? = null
     private val binding get() = _binding!!
     private val viewModel: ChallengesViewModel by viewModels()
-    private val adapter = ChallengesAdapter()
+    private val adapter = ChallengesAdapter { challenge ->
+        showDeleteChallengeDialog(challenge)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -73,6 +77,32 @@ class ChallengesFragment : Fragment() {
         }
 
         dialog.show()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+    }
+
+    private fun showDeleteChallengeDialog(challenge: Challenge) {
+        val dialogBinding = DialogDeleteChallengeBinding.inflate(layoutInflater)
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(dialogBinding.root)
+            .setCancelable(false) // C6: clic fuera no lo cierra
+            .create()
+
+        // C3: Texto con la descripción del reto a eliminar
+        dialogBinding.tvChallengeDescription.text = challenge.description
+
+        // C4: Botón "NO" naranja -> cierra el diálogo
+        dialogBinding.btnNo.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        // C5: Botón "SI" naranja -> elimina el reto de SQLite
+        dialogBinding.btnSi.setOnClickListener {
+            viewModel.deleteChallenge(challenge)
+            dialog.dismiss()
+        }
+
+        dialog.show()
+        // C1: El fondo blanco ya está definido en el XML del layout
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
     }
 

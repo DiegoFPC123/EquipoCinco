@@ -25,4 +25,10 @@ class ChallengesViewModel(application: Application) : AndroidViewModel(applicati
             repository.insertChallenge(Challenge(description = description))
         }
     }
+
+    fun deleteChallenge(challenge: Challenge) {
+        viewModelScope.launch {
+            repository.deleteChallenge(challenge)
+        }
+    }
 }
