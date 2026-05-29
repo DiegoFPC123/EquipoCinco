@@ -36,6 +36,10 @@ class HomeFragment : Fragment() {
     private var mediaPlayer: MediaPlayer? = null
     private var lastAngle = 0f
 
+    // Variables para sincronizar el diálogo con el conteo (C6 y C7)
+    private var pendingResult: ChallengeResult? = null
+    private var isCountdownFinished = false
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -62,11 +66,11 @@ class HomeFragment : Fragment() {
             }
         }
 
-        // C3 y C2: Observamos el resultado cuando ambos datos están listos
+        // C3 y C2: Observamos el resultado
         viewModel.challengeResult.observe(viewLifecycleOwner) { result ->
             result?.let {
-                showRandomChallengeDialog(it)
-                viewModel.clearChallengeResult()
+                pendingResult = it
+                checkAndShowDialog()
             }
         }
 
@@ -78,6 +82,16 @@ class HomeFragment : Fragment() {
                 binding.vCircle.startAnimation(blinkAnimation)
                 viewModel.clearError()
             }
+        }
+    }
+
+    private fun checkAndShowDialog() {
+        val result = pendingResult
+        if (isCountdownFinished && result != null) {
+            showRandomChallengeDialog(result)
+            pendingResult = null
+            isCountdownFinished = false
+            viewModel.clearChallengeResult()
         }
     }
 
@@ -109,8 +123,8 @@ class HomeFragment : Fragment() {
     private fun setupClicks() {
         binding.btnPressMeContainer.setOnClickListener {
             binding.vCircle.clearAnimation()
-            binding.btnPressMeContainer.isVisible = false
-            startCountdown()
+            binding.btnPressMeContainer.isVisible = false // C7: El botón desaparece mientras la partida está en proceso
+            spinBottle()
         }
 
         binding.btnStar.setOnClickListener {
@@ -143,17 +157,29 @@ class HomeFragment : Fragment() {
 
     private fun startCountdown() {
         lifecycleScope.launch {
+            isCountdownFinished = false
             binding.tvCountdown.isVisible = true
-            for (i in 3 downTo 1) {
+            for (i in 3 downTo 0) { // C6 y C7: Cuenta regresiva hasta 0
                 binding.tvCountdown.text = i.toString()
+                if (i == 0) {
+                    // C7: El botón reaparece al llegar a 0
+                    binding.btnPressMeContainer.isVisible = true
+                    binding.vCircle.startAnimation(blinkAnimation)
+                    
+                    // C6: Marcamos listo para mostrar el diálogo al llegar a 0
+                    isCountdownFinished = true
+                    checkAndShowDialog()
+                }
                 delay(1000)
             }
             binding.tvCountdown.isVisible = false
-            spinBottle()
         }
     }
 
     private fun spinBottle() {
+        // Adelantamos la petición para que el resultado esté listo al terminar el conteo
+        viewModel.fetchRandomChallengeAndPokemon()
+
         // Aseguramos aleatoriedad visual: giro mínimo de 5 vueltas + ángulo al azar
         val randomSpin = (Random.nextInt(5) + 5) * 360 + Random.nextInt(360)
         val newAngle = lastAngle + randomSpin.toFloat()
@@ -174,8 +200,8 @@ class HomeFragment : Fragment() {
             override fun onAnimationRepeat(animation: Animation?) {}
             override fun onAnimationEnd(animation: Animation?) {
                 lastAngle = newAngle % 360
-                // Solicitamos el reto al terminar el giro
-                viewModel.fetchRandomChallengeAndPokemon()
+                // Al terminar el giro, iniciamos la cuenta regresiva final (C6)
+                startCountdown()
             }
         })
         binding.ivBottle.startAnimation(rotateAnimation)
