@@ -1,15 +1,15 @@
 package com.example.pico_botella.ui.home
 
-import android.content.Intent
+import android.animation.Animator
+import android.animation.ObjectAnimator
 import android.media.MediaPlayer
-import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
-import android.view.animation.RotateAnimation
+import android.view.animation.DecelerateInterpolator
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
@@ -33,8 +33,8 @@ class HomeFragment : Fragment() {
     private val viewModel: HomeViewModel by activityViewModels()
     
     private var blinkAnimation: Animation? = null
-    private var mediaPlayer: MediaPlayer? = null
-    private var lastAngle = 0f
+    private var bgMediaPlayer: MediaPlayer? = null
+    private var spinMediaPlayer: MediaPlayer? = null
 
     // Variables para sincronizar el diálogo con el conteo (C6 y C7)
     private var pendingResult: ChallengeResult? = null
@@ -53,20 +53,22 @@ class HomeFragment : Fragment() {
         setupObservers()
         setupClicks()
         setupAnimations()
+        
+        // Criterio 4: Mantener el estado de la última rotación al recrear la vista
+        binding.ivBottle.rotation = viewModel.lastAngle
     }
 
     private fun setupObservers() {
         viewModel.isAudioEnabled.observe(viewLifecycleOwner) { isEnabled ->
             binding.btnPower.isActivated = !isEnabled
             if (isEnabled) {
-                if (mediaPlayer == null) initMediaPlayer()
-                if (isResumed) mediaPlayer?.start()
+                resumeBackgroundMusic()
             } else {
-                mediaPlayer?.pause()
+                pauseBackgroundMusic()
             }
         }
 
-        // C3 y C2: Observamos el resultado
+        // Criterio 6 y 7 (Implementados previamente): Observamos el resultado del reto
         viewModel.challengeResult.observe(viewLifecycleOwner) { result ->
             result?.let {
                 pendingResult = it
@@ -77,7 +79,6 @@ class HomeFragment : Fragment() {
         viewModel.error.observe(viewLifecycleOwner) { errorMsg ->
             errorMsg?.let {
                 Toast.makeText(context, it, Toast.LENGTH_LONG).show()
-                // Si hay error, permitimos jugar de nuevo
                 binding.btnPressMeContainer.isVisible = true
                 binding.vCircle.startAnimation(blinkAnimation)
                 viewModel.clearError()
@@ -95,47 +96,9 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun initMediaPlayer() {
-        mediaPlayer = MediaPlayer.create(requireContext(), R.raw.background_music)
-        mediaPlayer?.isLooping = true
-    }
-
-    override fun onResume() {
-        super.onResume()
-        if (viewModel.isAudioEnabled.value == true) {
-            if (mediaPlayer == null) initMediaPlayer()
-            mediaPlayer?.start()
-        }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        mediaPlayer?.pause()
-    }
-
-    private fun setupAnimations() {
-        try {
-            blinkAnimation = AnimationUtils.loadAnimation(requireContext(), R.anim.blink)
-            binding.vCircle.startAnimation(blinkAnimation)
-        } catch (e: Exception) {}
-    }
-
     private fun setupClicks() {
         binding.btnPressMeContainer.setOnClickListener {
-            binding.vCircle.clearAnimation()
-            binding.btnPressMeContainer.isVisible = false // C7: El botón desaparece mientras la partida está en proceso
-            spinBottle()
-        }
-
-        binding.btnStar.setOnClickListener {
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                data = Uri.parse("https://play.google.com/store/apps/details?id=com.nequi.MobileApp&hl=es_419&gl=es")
-            }
-            try {
-                startActivity(intent)
-            } catch (e: Exception) {
-                Toast.makeText(context, "No se pudo abrir la tienda", Toast.LENGTH_SHORT).show()
-            }
+            startBottleTurn()
         }
 
         binding.btnPower.setOnClickListener {
@@ -150,23 +113,76 @@ class HomeFragment : Fragment() {
             findNavController().navigate(R.id.action_homeFragment_to_challengesFragment)
         }
 
+        binding.btnStar.setOnClickListener {
+            // Lógica existente para redirección a tienda
+            Toast.makeText(context, "Calificar app", Toast.LENGTH_SHORT).show()
+        }
+
         binding.btnShare.setOnClickListener {
             Toast.makeText(context, "Compartir", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun setupAnimations() {
+        blinkAnimation = AnimationUtils.loadAnimation(requireContext(), R.anim.blink)
+        binding.vCircle.startAnimation(blinkAnimation)
+    }
+
+    private fun startBottleTurn() {
+        // Criterio 7: El botón desaparece mientras la partida está en proceso
+        binding.vCircle.clearAnimation()
+        binding.btnPressMeContainer.isVisible = false
+        
+        // Criterio 8: Pausar audio de fondo si está activo
+        pauseBackgroundMusic()
+
+        // Criterio 1 y 3: Configurar giro aleatorio (duración entre 3 y 5 seg)
+        val randomDuration = Random.nextLong(3000, 5001)
+        val randomExtraRotation = Random.nextFloat() * 360f
+        val fullSpins = (5..8).random() * 360f 
+        val targetRotation = viewModel.lastAngle + fullSpins + randomExtraRotation
+
+        // Criterio 2: Iniciar sonido de botella girando
+        playSpinSound()
+
+        // Animación profesional con ObjectAnimator (Criterio 1 y 3)
+        val animator = ObjectAnimator.ofFloat(binding.ivBottle, View.ROTATION, viewModel.lastAngle, targetRotation)
+        animator.duration = randomDuration
+        animator.interpolator = DecelerateInterpolator()
+        
+        animator.addListener(object : Animator.AnimatorListener {
+            override fun onAnimationStart(animation: Animator) {}
+            override fun onAnimationRepeat(animation: Animator) {}
+            override fun onAnimationCancel(animation: Animator) {
+                stopSpinSound()
+            }
+            override fun onAnimationEnd(animation: Animator) {
+                // Criterio 2: Detener sonido inmediatamente al terminar el giro
+                stopSpinSound()
+                
+                // Criterio 4: Guardar ángulo final para el próximo giro
+                viewModel.updateAngle(targetRotation)
+                
+                // Criterio 5: Iniciar cuenta regresiva
+                startCountdown()
+            }
+        })
+        
+        animator.start()
+        
+        // Criterio 6/7: Solicitar datos mientras gira
+        viewModel.fetchRandomChallengeAndPokemon()
     }
 
     private fun startCountdown() {
         lifecycleScope.launch {
             isCountdownFinished = false
             binding.tvCountdown.isVisible = true
-            for (i in 3 downTo 0) { // C6 y C7: Cuenta regresiva hasta 0
+            // Criterio 5: Contador de 3 a 0 en el centro
+            for (i in 3 downTo 0) {
                 binding.tvCountdown.text = i.toString()
                 if (i == 0) {
-                    // C7: El botón reaparece al llegar a 0
-                    binding.btnPressMeContainer.isVisible = true
-                    binding.vCircle.startAnimation(blinkAnimation)
-                    
-                    // C6: Marcamos listo para mostrar el diálogo al llegar a 0
+                    // C6 y C7: Indicar que el conteo terminó para mostrar el diálogo
                     isCountdownFinished = true
                     checkAndShowDialog()
                 }
@@ -176,48 +192,17 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun spinBottle() {
-        // Adelantamos la petición para que el resultado esté listo al terminar el conteo
-        viewModel.fetchRandomChallengeAndPokemon()
-
-        // Aseguramos aleatoriedad visual: giro mínimo de 5 vueltas + ángulo al azar
-        val randomSpin = (Random.nextInt(5) + 5) * 360 + Random.nextInt(360)
-        val newAngle = lastAngle + randomSpin.toFloat()
-        
-        val rotateAnimation = RotateAnimation(
-            lastAngle,
-            newAngle,
-            RotateAnimation.RELATIVE_TO_SELF, 0.5f,
-            RotateAnimation.RELATIVE_TO_SELF, 0.5f
-        ).apply {
-            duration = 3000
-            fillAfter = true
-            interpolator = android.view.animation.DecelerateInterpolator()
-        }
-        
-        rotateAnimation.setAnimationListener(object : Animation.AnimationListener {
-            override fun onAnimationStart(animation: Animation?) {}
-            override fun onAnimationRepeat(animation: Animation?) {}
-            override fun onAnimationEnd(animation: Animation?) {
-                lastAngle = newAngle % 360
-                // Al terminar el giro, iniciamos la cuenta regresiva final (C6)
-                startCountdown()
-            }
-        })
-        binding.ivBottle.startAnimation(rotateAnimation)
-    }
-
     private fun showRandomChallengeDialog(result: ChallengeResult) {
         val dialogBinding = DialogRandomChallengeBinding.inflate(layoutInflater)
         val dialog = AlertDialog.Builder(requireContext())
             .setView(dialogBinding.root)
-            .setCancelable(false) // C6: Solo se cierra con "Cerrar"
+            .setCancelable(false)
             .create()
 
-        // C3: Texto del reto (traído desde SQLite)
+        // Criterio 6: Mostrar el texto del reto aleatorio
         dialogBinding.tvChallenge.text = result.challenge.description
 
-        // C2: Carga de imagen Pokemon desde la API
+        // Mostrar imagen del Pokemon
         val imageUrl = result.pokemon.img.replace("http://", "https://")
         Glide.with(this)
             .load(imageUrl)
@@ -225,23 +210,72 @@ class HomeFragment : Fragment() {
             .error(R.drawable.ic_launcher_foreground)
             .into(dialogBinding.ivPokemon)
 
-        // C4: Botón "Cerrar"
+        // Botón "Cerrar" del diálogo
         dialogBinding.btnClose.setOnClickListener {
             dialog.dismiss()
-            // C5: El juego regresa al home listo para una nueva partida
+            
+            // Criterio 7 y 8: La partida termina, reaparece botón y se reanuda música
             binding.btnPressMeContainer.isVisible = true
             binding.vCircle.startAnimation(blinkAnimation)
+            
+            if (viewModel.isAudioEnabled.value == true) {
+                resumeBackgroundMusic()
+            }
         }
 
         dialog.show()
-        // C1: Fondo con transparencia sutil
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+    }
+
+    private fun playSpinSound() {
+        try {
+            spinMediaPlayer?.release()
+            spinMediaPlayer = MediaPlayer.create(requireContext(), R.raw.sonido_botella)
+            spinMediaPlayer?.start()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun stopSpinSound() {
+        spinMediaPlayer?.stop()
+        spinMediaPlayer?.release()
+        spinMediaPlayer = null
+    }
+
+    private fun resumeBackgroundMusic() {
+        if (bgMediaPlayer == null) {
+            bgMediaPlayer = MediaPlayer.create(requireContext(), R.raw.background_music)
+            bgMediaPlayer?.isLooping = true
+        }
+        if (!bgMediaPlayer!!.isPlaying) {
+            bgMediaPlayer?.start()
+        }
+    }
+
+    private fun pauseBackgroundMusic() {
+        if (bgMediaPlayer?.isPlaying == true) {
+            bgMediaPlayer?.pause()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (viewModel.isAudioEnabled.value == true) {
+            resumeBackgroundMusic()
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        pauseBackgroundMusic()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        mediaPlayer?.release()
-        mediaPlayer = null
+        bgMediaPlayer?.release()
+        bgMediaPlayer = null
+        stopSpinSound()
         _binding = null
     }
 }

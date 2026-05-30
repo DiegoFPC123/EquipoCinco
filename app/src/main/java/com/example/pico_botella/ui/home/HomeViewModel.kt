@@ -28,19 +28,18 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _error = MutableLiveData<String?>()
     val error: LiveData<String?> get() = _error
 
+    // Criterio 4: Mantener el estado de la última rotación
+    private var _lastAngle = 0f
+    val lastAngle: Float get() = _lastAngle
+
     init {
         val dao = AppDatabase.getDatabase(application).challengeDao()
         challengeRepository = ChallengeRepository(dao)
         pokemonRepository = PokemonRepository(PokemonApiService.create())
-        
-        // Pre-cargamos los pokémon para que la primera vez sea instantáneo (Solución C2)
-        viewModelScope.launch {
-            try {
-                pokemonRepository.getRandomPokemon()
-            } catch (e: Exception) {
-                // Silencioso, se reintentará al girar
-            }
-        }
+    }
+
+    fun updateAngle(newAngle: Float) {
+        _lastAngle = newAngle % 360f
     }
 
     fun toggleAudio() {
@@ -54,7 +53,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 val pokemon = pokemonRepository.getRandomPokemon()
 
                 if (challenge != null && pokemon != null) {
-                    // postValue asegura que se notifique al hilo principal correctamente
                     _challengeResult.postValue(ChallengeResult(challenge, pokemon))
                 } else if (challenge == null) {
                     _error.postValue("No hay retos guardados. ¡Agrega uno primero!")
