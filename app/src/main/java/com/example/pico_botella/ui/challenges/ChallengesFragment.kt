@@ -87,6 +87,7 @@ class ChallengesFragment : Fragment() {
         val dialogBinding = DialogEditarRetoBinding.inflate(layoutInflater)
         val dialog = AlertDialog.Builder(requireContext())
             .setView(dialogBinding.root)
+            .setCancelable(false) // C7: el diálogo solo se cierra con "Cancelar" o "Guardar"
             .create()
 
         dialogBinding.etReto.setText(challenge.description)
@@ -112,7 +113,6 @@ class ChallengesFragment : Fragment() {
         val dialogBinding = DialogDeleteChallengeBinding.inflate(layoutInflater)
         val dialog = AlertDialog.Builder(requireContext())
             .setView(dialogBinding.root)
-            .setCancelable(false)
             .create()
 
         dialogBinding.tvChallengeDescription.text = challenge.description
