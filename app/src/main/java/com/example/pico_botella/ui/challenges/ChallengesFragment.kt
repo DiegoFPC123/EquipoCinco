@@ -6,10 +6,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
+import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import com.example.pico_botella.databinding.FragmentChallengesBinding
-import com.example.pico_botella.databinding.DialogAddChallengeBinding
 import com.example.pico_botella.databinding.DialogDeleteChallengeBinding
 import com.example.pico_botella.databinding.DialogEditarRetoBinding
 import com.example.pico_botella.data.entity.Challenge
@@ -18,7 +17,8 @@ class ChallengesFragment : Fragment() {
 
     private var _binding: FragmentChallengesBinding? = null
     private val binding get() = _binding!!
-    private val viewModel: ChallengesViewModel by viewModels()
+    
+    private val viewModel: ChallengesViewModel by activityViewModels()
     
     private val adapter = ChallengesAdapter(
         onEditClick = { challenge -> showEditChallengeDialog(challenge) },
@@ -62,31 +62,16 @@ class ChallengesFragment : Fragment() {
     }
 
     private fun showAddChallengeDialog() {
-        val dialogBinding = DialogAddChallengeBinding.inflate(layoutInflater)
-        val dialog = AlertDialog.Builder(requireContext())
-            .setView(dialogBinding.root)
-            .create()
-
-        dialogBinding.btnCancel.setOnClickListener {
-            dialog.dismiss()
-        }
-
-        dialogBinding.btnSave.setOnClickListener {
-            val description = dialogBinding.etChallenge.text.toString()
-            if (description.isNotBlank()) {
-                viewModel.addChallenge(description)
-                dialog.dismiss()
-            }
-        }
-
-        dialog.show()
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        AddChallengeDialogFragment.newInstance().show(
+            childFragmentManager, AddChallengeDialogFragment.TAG
+        )
     }
 
     private fun showEditChallengeDialog(challenge: Challenge) {
         val dialogBinding = DialogEditarRetoBinding.inflate(layoutInflater)
         val dialog = AlertDialog.Builder(requireContext())
             .setView(dialogBinding.root)
+            .setCancelable(false) // CRITERIO 7: El diálogo NO desaparece al tocar fuera
             .create()
 
         dialogBinding.etReto.setText(challenge.description)
@@ -112,7 +97,7 @@ class ChallengesFragment : Fragment() {
         val dialogBinding = DialogDeleteChallengeBinding.inflate(layoutInflater)
         val dialog = AlertDialog.Builder(requireContext())
             .setView(dialogBinding.root)
-            .setCancelable(false)
+            .setCancelable(false) // No desaparece al tocar fuera
             .create()
 
         dialogBinding.tvChallengeDescription.text = challenge.description
