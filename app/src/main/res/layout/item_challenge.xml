@@ -23,10 +23,7 @@
                 android:id="@+id/ivChallengeIcon"
                 android:layout_width="24dp"
                 android:layout_height="24dp"
-<<<<<<< HEAD
                 android:layout_alignParentStart="true"
-=======
->>>>>>> 09236ff3b3f8a7616e81db06b639c6c02cd473c4
                 android:src="@drawable/ic_bottle"
                 app:tint="#FF9800" />
 
@@ -38,7 +35,6 @@
 
                 <ImageView
                     android:id="@+id/btnEdit"
-<<<<<<< HEAD
                     android:layout_width="32dp"
                     android:layout_height="32dp"
                     android:layout_marginEnd="16dp"
@@ -46,27 +42,17 @@
                     android:clickable="true"
                     android:focusable="true"
                     android:padding="4dp"
-=======
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_marginEnd="16dp"
->>>>>>> 09236ff3b3f8a7616e81db06b639c6c02cd473c4
                     android:src="@android:drawable/ic_menu_edit"
                     app:tint="#00796B" />
 
                 <ImageView
                     android:id="@+id/btnDelete"
-<<<<<<< HEAD
                     android:layout_width="32dp"
                     android:layout_height="32dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:clickable="true"
                     android:focusable="true"
                     android:padding="4dp"
-=======
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
->>>>>>> 09236ff3b3f8a7616e81db06b639c6c02cd473c4
                     android:src="@android:drawable/ic_menu_delete"
                     app:tint="#B71C1C" />
             </LinearLayout>
@@ -84,9 +70,5 @@
             android:layout_height="wrap_content"
             android:textColor="#333333"
             android:textSize="14sp" />
-<<<<<<< HEAD
-
-=======
->>>>>>> 09236ff3b3f8a7616e81db06b639c6c02cd473c4
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
