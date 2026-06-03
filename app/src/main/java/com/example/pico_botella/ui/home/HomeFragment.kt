@@ -1,7 +1,8 @@
 package com.example.pico_botella.ui.home
 
 import android.animation.Animator
-import android.animation.ObjectAnimator
+import android.content.Intent
+import android.net.Uri
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -114,13 +115,36 @@ class HomeFragment : Fragment() {
         }
 
         binding.btnStar.setOnClickListener {
-            // Lógica existente para redirección a tienda
-            Toast.makeText(context, "Calificar app", Toast.LENGTH_SHORT).show()
+            // C1: Abrir el enlace de Nequi en Google Play como simulación
+            val url = "https://play.google.com/store/apps/details?id=com.nequi.MobileApp&hl=es_419&gl=es"
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            try {
+                startActivity(intent)
+            } catch (e: Exception) {
+                Toast.makeText(context, "No se pudo abrir la tienda", Toast.LENGTH_SHORT).show()
+            }
         }
 
         binding.btnShare.setOnClickListener {
-            Toast.makeText(context, "Compartir", Toast.LENGTH_SHORT).show()
+            // C1 y C2: Compartir con el eslogan y URL requeridos
+            shareApp()
         }
+    }
+
+    private fun shareApp() {
+        val title = "App pico botella"
+        val slogan = "Solo los valientes lo juegan !!"
+        val url = "https://play.google.com/store/apps/details?id=com.nequi.MobileApp&hl=es_419&gl=es"
+        
+        val shareMessage = "$title\n$slogan\n$url"
+        
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, shareMessage)
+        }
+        
+        val chooser = Intent.createChooser(intent, "Compartir usando:")
+        startActivity(chooser)
     }
 
     private fun setupAnimations() {
@@ -136,7 +160,7 @@ class HomeFragment : Fragment() {
         // Criterio 8: Pausar audio de fondo si está activo
         pauseBackgroundMusic()
 
-        // Criterio 1 y 3: Configurar giro aleatorio (duración entre 3 y 5 seg)
+        // Giro aleatorio (duración entre 3 y 5 seg)
         val randomDuration = Random.nextLong(3000, 5001)
         val randomExtraRotation = Random.nextFloat() * 360f
         val fullSpins = (5..8).random() * 360f 
@@ -145,30 +169,29 @@ class HomeFragment : Fragment() {
         // Criterio 2: Iniciar sonido de botella girando
         playSpinSound()
 
-        // Animación profesional con ObjectAnimator (Criterio 1 y 3)
-        val animator = ObjectAnimator.ofFloat(binding.ivBottle, View.ROTATION, viewModel.lastAngle, targetRotation)
-        animator.duration = randomDuration
-        animator.interpolator = DecelerateInterpolator()
-        
-        animator.addListener(object : Animator.AnimatorListener {
-            override fun onAnimationStart(animation: Animator) {}
-            override fun onAnimationRepeat(animation: Animator) {}
-            override fun onAnimationCancel(animation: Animator) {
-                stopSpinSound()
-            }
-            override fun onAnimationEnd(animation: Animator) {
-                // Criterio 2: Detener sonido inmediatamente al terminar el giro
-                stopSpinSound()
-                
-                // Criterio 4: Guardar ángulo final para el próximo giro
-                viewModel.updateAngle(targetRotation)
-                
-                // Criterio 5: Iniciar cuenta regresiva
-                startCountdown()
-            }
-        })
-        
-        animator.start()
+        // Usamos ViewPropertyAnimator para mayor compatibilidad y asegurar el giro
+        binding.ivBottle.animate()
+            .rotation(targetRotation)
+            .setDuration(randomDuration)
+            .setInterpolator(DecelerateInterpolator())
+            .setListener(object : Animator.AnimatorListener {
+                override fun onAnimationStart(animation: Animator) {}
+                override fun onAnimationRepeat(animation: Animator) {}
+                override fun onAnimationCancel(animation: Animator) {
+                    stopSpinSound()
+                }
+                override fun onAnimationEnd(animation: Animator) {
+                    // Criterio 2: Detener sonido inmediatamente al terminar el giro
+                    stopSpinSound()
+                    
+                    // Criterio 4: Guardar ángulo final para el próximo giro
+                    viewModel.updateAngle(targetRotation)
+                    
+                    // Criterio 5: Iniciar cuenta regresiva
+                    startCountdown()
+                }
+            })
+            .start()
         
         // Criterio 6/7: Solicitar datos mientras gira
         viewModel.fetchRandomChallengeAndPokemon()
