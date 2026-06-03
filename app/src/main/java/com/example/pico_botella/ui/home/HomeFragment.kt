@@ -160,6 +160,13 @@ class HomeFragment : Fragment() {
         // Criterio 8: Pausar audio de fondo si está activo
         pauseBackgroundMusic()
 
+        // SOLUCIÓN AL PROBLEMA DE LENTITUD:
+        // Reiniciamos la rotación visual de la botella al ángulo normalizado (0-360)
+        // que tenemos guardado en el ViewModel. Sin esto, en el segundo giro la botella
+        // ya tiene una rotación acumulada muy alta y la animación "cree" que solo debe
+        // moverse un poquito, haciéndolo muy lento.
+        binding.ivBottle.rotation = viewModel.lastAngle
+
         // Giro aleatorio (duración entre 3 y 5 seg)
         val randomDuration = Random.nextLong(3000, 5001)
         val randomExtraRotation = Random.nextFloat() * 360f
@@ -184,7 +191,7 @@ class HomeFragment : Fragment() {
                     // Criterio 2: Detener sonido inmediatamente al terminar el giro
                     stopSpinSound()
                     
-                    // Criterio 4: Guardar ángulo final para el próximo giro
+                    // Criterio 4: Guardar ángulo final para el próximo giro (normalizado a 0-360)
                     viewModel.updateAngle(targetRotation)
                     
                     // Criterio 5: Iniciar cuenta regresiva

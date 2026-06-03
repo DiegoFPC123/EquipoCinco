@@ -97,10 +97,7 @@ class ChallengesFragment : Fragment() {
         val dialogBinding = DialogDeleteChallengeBinding.inflate(layoutInflater)
         val dialog = AlertDialog.Builder(requireContext())
             .setView(dialogBinding.root)
-<<<<<<< HEAD
-=======
             .setCancelable(false) // No desaparece al tocar fuera
->>>>>>> origin/AFBG
             .create()
 
         dialogBinding.tvChallengeDescription.text = challenge.description
